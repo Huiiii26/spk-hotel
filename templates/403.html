@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Không có quyền | SPK Hotel{% endblock %}
+
+{% block content %}
+<div class="text-center py-5">
+    <div class="display-1 fw-bold text-primary">403</div>
+    <h1 class="h3">Bạn không có quyền truy cập</h1>
+    <p class="text-secondary">Vui lòng quay lại trang phù hợp với vai trò tài khoản.</p>
+    <a class="btn btn-primary" href="{% url 'core:home' %}">Về trang chủ</a>
+</div>
+{% endblock %}

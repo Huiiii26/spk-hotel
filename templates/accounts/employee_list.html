@@ -1,0 +1,48 @@
+{% extends "dashboard_base.html" %}
+
+{% block title %}Quản lý nhân viên | SPK Hotel{% endblock %}
+
+{% block page_title %}Nhân viên{% endblock %}
+{% block breadcrumb %}Quản lý / Nhân viên{% endblock %}
+{% block dashboard_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Quản lý nhân viên</h1>
+        <p class="text-secondary mb-0">Tài khoản lễ tân và kế toán.</p>
+    </div>
+    <a class="btn btn-primary" href="{% url 'accounts:employee-create' %}">Thêm nhân viên</a>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr><th>Họ tên</th><th>Email</th><th>Vai trò</th><th>Trạng thái</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for employee in employees %}
+                    <tr>
+                        <td>{{ employee.full_name }}</td>
+                        <td>{{ employee.email }}</td>
+                        <td>{{ employee.get_role_display }}</td>
+                        <td>
+                            {% if employee.is_active %}<span class="badge text-bg-success">Hoạt động</span>
+                            {% else %}<span class="badge text-bg-secondary">Đã khóa</span>{% endif %}
+                        </td>
+                        <td class="text-end">
+                            <form method="post" action="{% url 'accounts:employee-toggle-active' employee.pk %}">
+                                {% csrf_token %}
+                                <button class="btn btn-sm {% if employee.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}" type="submit">
+                                    {% if employee.is_active %}Khóa{% else %}Mở khóa{% endif %}
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td class="text-center text-secondary py-5" colspan="5">Chưa có tài khoản nhân viên.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

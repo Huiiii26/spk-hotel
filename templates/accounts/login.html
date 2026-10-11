@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Đăng nhập | SPK Hotel{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-7 col-lg-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <h1 class="h3 mb-3">Đăng nhập</h1>
+                {% if form.errors %}
+                    <div class="alert alert-danger">Email hoặc mật khẩu không chính xác.</div>
+                {% endif %}
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ form.username.id_for_label }}">Email</label>
+                        <input class="form-control" type="email" name="username" id="{{ form.username.id_for_label }}" required autofocus>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ form.password.id_for_label }}">Mật khẩu</label>
+                        <input class="form-control" type="password" name="password" id="{{ form.password.id_for_label }}" required>
+                    </div>
+                    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+                    <button class="btn btn-primary w-100" type="submit">Đăng nhập</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

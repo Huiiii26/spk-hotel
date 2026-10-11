@@ -1,0 +1,58 @@
+{% extends "dashboard_base.html" %}{% load hotel_format %}
+{% block title %}{{ booking.booking_code }} | SPK Hotel{% endblock %}
+{% block page_title %}Chi tiết booking{% endblock %}
+{% block breadcrumb %}Booking / {{ booking.booking_code }}{% endblock %}
+{% block dashboard_content %}
+<section class="panel-card form-panel">
+    <div class="panel-header">
+        <div><h2>{{ booking.booking_code }}</h2><p>Tạo lúc {{ booking.created_at|date:"d/m/Y H:i" }}</p></div>
+        <span class="status-pill"><i></i>{{ booking.get_status_display }}</span>
+    </div>
+    <div class="detail-grid">
+        <div><span>Khách hàng</span><strong>{{ booking.customer.full_name }}</strong></div>
+        <div><span>Phòng</span><strong>{{ booking.room.room_number }} · {{ booking.room.room_type.name }}</strong></div>
+        <div><span>Ngày, giờ nhận phòng</span><strong>{{ booking.check_in_date|vi_datetime }}</strong></div>
+        <div><span>Ngày, giờ trả phòng</span><strong>{{ booking.check_out_date|vi_datetime }}</strong></div>
+        <div><span>Hình thức tính</span><strong>{{ booking.billing_mode_display }} · {{ booking.billable_units }} {% if booking.is_hourly %}giờ{% else %}ngày{% endif %}</strong></div>
+        <div><span>Số khách</span><strong>{{ booking.guest_count }}</strong></div>
+        <div><span>Giá phòng lúc đặt</span><strong>{% if booking.is_hourly %}{{ booking.room_price_per_hour|vnd }}/giờ{% else %}{{ booking.room_price_per_night|vnd }}/ngày{% endif %}</strong></div>
+        <div><span>Người tạo</span><strong>{{ booking.created_by.full_name|default:"Hệ thống" }}</strong></div>
+        {% if booking.actual_check_in_at %}<div><span>Check-in thực tế</span><strong>{{ booking.actual_check_in_at|date:"d/m/Y H:i" }}</strong></div>{% endif %}
+        {% if booking.actual_check_out_at %}<div><span>Check-out thực tế</span><strong>{{ booking.actual_check_out_at|date:"d/m/Y H:i" }}</strong></div>{% endif %}
+        {% if booking.cancellation_reason %}<div class="span-2"><span>Lý do hủy</span><strong>{{ booking.cancellation_reason }}</strong></div>{% endif %}
+        {% if booking.notes %}<div class="span-2"><span>Ghi chú</span><strong>{{ booking.notes }}</strong></div>{% endif %}
+    </div>
+
+    {% if booking.used_services.all %}<h3 class="h5 mt-4">Dịch vụ đã sử dụng</h3><div class="table-responsive"><table class="hotel-table"><thead><tr><th>Dịch vụ</th><th>Số lượng</th><th>Đơn giá lúc dùng</th><th>Thành tiền</th></tr></thead><tbody>{% for item in booking.used_services.all %}<tr><td>{{ item.service.name }}</td><td>{{ item.quantity }} {{ item.service.unit }}</td><td>{{ item.unit_price|vnd }}</td><td>{{ item.line_total|vnd }}</td></tr>{% endfor %}</tbody></table></div>{% endif %}
+
+    <div class="booking-actions">
+        {% if booking.status == 'CHECKED_IN' and user.role == 'RECEPTIONIST' or booking.status == 'CHECKED_IN' and user.role == 'MANAGER' %}<a class="outline-link" href="{% url 'services-staff:booking-service-add' booking.pk %}">Ghi dịch vụ sử dụng</a>{% endif %}
+        {% if user.role == 'RECEPTIONIST' or user.role == 'MANAGER' %}<a class="outline-link" href="{% url 'ai-integration:email-generate' booking.pk %}"><i class="bi bi-stars"></i> Sinh email</a>{% endif %}
+        {% if booking.invoice %}{% if user.role == 'CUSTOMER' %}<a class="outline-link" href="{% url 'customer-billing:detail' booking.invoice.pk %}">Xem hóa đơn</a>{% else %}<a class="outline-link" href="{% url 'billing-staff:detail' booking.invoice.pk %}">Xem hóa đơn</a>{% endif %}{% endif %}
+        {% if user.role == 'RECEPTIONIST' or user.role == 'MANAGER' %}
+            {% if booking.status == 'PENDING' %}
+                <button class="primary-button action-trigger" type="button" data-bs-toggle="modal" data-bs-target="#actionModal" data-action-url="{% url 'bookings-staff:confirm' booking.pk %}" data-action-title="Xác nhận booking" data-action-message="Xác nhận booking này và giữ phòng cho khách?">Xác nhận booking</button>
+                <button class="danger-button action-trigger" type="button" data-bs-toggle="modal" data-bs-target="#actionModal" data-action-url="{% url 'bookings-staff:cancel' booking.pk %}" data-action-title="Hủy booking" data-action-message="Bạn chắc chắn muốn hủy booking này?" data-require-reason="true">Hủy booking</button>
+            {% elif booking.status == 'CONFIRMED' %}
+                <button class="primary-button action-trigger" type="button" data-bs-toggle="modal" data-bs-target="#actionModal" data-action-url="{% url 'bookings-staff:check-in' booking.pk %}" data-action-title="Check-in" data-action-message="Xác nhận khách đã nhận phòng?">Check-in</button>
+                <button class="danger-button action-trigger" type="button" data-bs-toggle="modal" data-bs-target="#actionModal" data-action-url="{% url 'bookings-staff:cancel' booking.pk %}" data-action-title="Hủy booking" data-action-message="Bạn chắc chắn muốn hủy booking này?" data-require-reason="true">Hủy booking</button>
+            {% elif booking.status == 'CHECKED_IN' %}
+                <button class="primary-button action-trigger" type="button" data-bs-toggle="modal" data-bs-target="#actionModal" data-action-url="{% url 'bookings-staff:check-out' booking.pk %}" data-action-title="Check-out" data-action-message="Xác nhận khách đã trả phòng? Phòng sẽ chuyển sang trạng thái đang dọn.">Check-out</button>
+            {% endif %}
+        {% elif user.role == 'CUSTOMER' and booking.status != 'CHECKED_IN' and booking.status != 'CHECKED_OUT' and booking.status != 'CANCELLED' %}
+            <button class="danger-button action-trigger" type="button" data-bs-toggle="modal" data-bs-target="#actionModal" data-action-url="{% url 'customer-bookings:cancel' booking.pk %}" data-action-title="Hủy booking" data-action-message="Bạn chắc chắn muốn hủy booking này?" data-require-reason="true">Hủy booking</button>
+        {% endif %}
+        {% if user.role == 'CUSTOMER' %}<a class="outline-link" href="{% url 'customer-bookings:list' %}">Quay lại</a>{% else %}<a class="outline-link" href="{% url 'bookings-staff:list' %}">Quay lại</a>{% endif %}
+    </div>
+</section>
+
+<div class="modal fade" id="actionModal" tabindex="-1" aria-labelledby="actionModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-4">
+        <form id="bookingActionForm" method="post">{% csrf_token %}
+            <div class="modal-header"><h2 class="modal-title fs-5" id="actionModalTitle">Xác nhận thao tác</h2><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Đóng"></button></div>
+            <div class="modal-body"><p id="actionModalMessage"></p><div id="cancellationReasonGroup" class="d-none"><label class="form-label" for="id_action_reason">Lý do hủy</label><textarea class="form-control" id="id_action_reason" name="reason" rows="3" maxlength="255"></textarea></div></div>
+            <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Quay lại</button><button class="btn btn-primary" type="submit">Xác nhận</button></div>
+        </form>
+    </div></div>
+</div>
+{% endblock %}

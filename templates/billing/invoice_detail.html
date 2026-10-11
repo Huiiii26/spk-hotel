@@ -1,0 +1,57 @@
+{% extends "dashboard_base.html" %}{% load hotel_format %}
+{% block title %}Hóa đơn {{ invoice.pk }} | SPK Hotel{% endblock %}
+{% block page_title %}Chi tiết hóa đơn{% endblock %}
+{% block breadcrumb %}Hóa đơn / {{ invoice.booking.booking_code }}{% endblock %}
+{% block dashboard_content %}
+<section class="panel-card form-panel">
+    <div class="panel-header">
+        <div><h2>{{ invoice.booking.booking_code }}</h2><p>{{ invoice.booking.customer.full_name }} · Phòng {{ invoice.booking.room.room_number }}</p></div>
+        <span class="status-pill"><i></i>{{ invoice.get_status_display }}</span>
+    </div>
+    <div class="detail-grid">
+        <div><span>Tiền phòng</span><strong>{{ invoice.room_amount|vnd }}</strong></div>
+        <div><span>Tiền dịch vụ</span><strong>{{ invoice.service_amount|vnd }}</strong></div>
+        <div><span>Phụ thu</span><strong>{{ invoice.surcharge|vnd }}</strong></div>
+        <div><span>Giảm giá</span><strong>{{ invoice.discount|vnd }}</strong></div>
+        <div><span>Tổng tiền</span><strong>{{ invoice.total_amount|vnd }}</strong></div>
+        <div><span>Đã thanh toán</span><strong>{{ invoice.paid_amount|vnd }}</strong></div>
+        <div><span>Còn thiếu</span><strong class="text-primary">{{ invoice.balance_due|vnd }}</strong></div>
+    </div>
+
+    <h3 class="h5 mt-4">Dịch vụ đã sử dụng</h3>
+    <div class="table-responsive"><table class="hotel-table"><thead><tr><th>Dịch vụ</th><th>Số lượng</th><th>Đơn giá</th><th>Thành tiền</th></tr></thead><tbody>{% for item in invoice.booking.used_services.all %}<tr><td>{{ item.service.name }}</td><td>{{ item.quantity }} {{ item.service.unit }}</td><td>{{ item.unit_price|vnd }}</td><td>{{ item.line_total|vnd }}</td></tr>{% empty %}<tr><td colspan="4">Không có dịch vụ.</td></tr>{% endfor %}</tbody></table></div>
+
+    <h3 class="h5 mt-4">Lịch sử thanh toán</h3>
+    <div class="table-responsive"><table class="hotel-table"><thead><tr><th>Thời gian</th><th>Số tiền</th><th>Hình thức</th><th>Tham chiếu</th></tr></thead><tbody>{% for payment in invoice.payments.all %}<tr><td>{{ payment.paid_at|date:"d/m/Y H:i" }}</td><td>{{ payment.amount|vnd }}</td><td>{{ payment.get_method_display }}</td><td>{{ payment.reference|default:"—" }}</td></tr>{% empty %}<tr><td colspan="4">Chưa có thanh toán.</td></tr>{% endfor %}</tbody></table></div>
+
+    <div class="booking-actions">
+        {% if user.role == 'RECEPTIONIST' or user.role == 'MANAGER' %}<a class="outline-link" href="{% url 'billing-staff:adjust' invoice.pk %}">Phụ thu/Giảm giá</a>{% endif %}
+        {% if invoice.balance_due > 0 and user.role == 'ACCOUNTANT' or invoice.balance_due > 0 and user.role == 'MANAGER' %}
+            <a class="primary-button" href="{% url 'billing-staff:payment-add' invoice.pk %}">Ghi nhận thanh toán</a>
+            <a class="outline-link" href="{% url 'ai-integration:email-generate' invoice.booking.pk %}"><i class="bi bi-stars"></i> Email nhắc nợ</a>
+        {% endif %}
+        {% if user.role == 'CUSTOMER' and invoice.balance_due > 0 %}
+            <button class="primary-button" type="button" data-bs-toggle="modal" data-bs-target="#paymentModal"><i class="bi bi-credit-card"></i> Thanh toán ngay</button>
+        {% elif user.role == 'CUSTOMER' %}
+            <span class="status-pill status-paid"><i></i>Đã thanh toán đầy đủ</span>
+        {% endif %}
+        {% if user.role == 'CUSTOMER' %}<a class="outline-link" href="{% url 'customer-billing:list' %}">Quay lại</a>{% else %}<a class="outline-link" href="{% url 'billing-staff:list' %}">Quay lại</a>{% endif %}
+    </div>
+</section>
+
+{% if user.role == 'CUSTOMER' and invoice.balance_due > 0 %}
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-4">
+        <form method="post" action="{% url 'customer-billing:pay' invoice.pk %}">
+            {% csrf_token %}
+            <div class="modal-header"><h2 class="modal-title fs-5" id="paymentModalTitle">Xác nhận thanh toán</h2><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Đóng"></button></div>
+            <div class="modal-body">
+                <p>Bạn muốn thanh toán toàn bộ số tiền còn thiếu <strong>{{ invoice.balance_due|vnd }}</strong>?</p>
+                <div class="alert alert-info mb-0">Đây là thanh toán mô phỏng cho đồ án, không trừ tiền ngân hàng thật.</div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Quay lại</button><button class="btn btn-primary" type="submit">Thanh toán</button></div>
+        </form>
+    </div></div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,27 @@
+databases:
+  - name: spk-hotel-db
+    plan: free
+    databaseName: spk_hotel
+    user: spk_hotel
+
+services:
+  - type: web
+    name: spk-hotel
+    runtime: python
+    plan: free
+    buildCommand: bash build.sh
+    startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+    healthCheckPath: /
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: spk-hotel-db
+          property: connectionString
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash

@@ -1,0 +1,19 @@
+{% extends "dashboard_base.html" %}{% load hotel_format %}
+{% block title %}Tài khoản của tôi | SPK Hotel{% endblock %}{% block page_title %}Tổng quan tài khoản{% endblock %}{% block breadcrumb %}Tài khoản / Tổng quan{% endblock %}
+{% block dashboard_content %}
+<section class="kpi-grid customer-kpi-grid"><article class="kpi-card"><span>Booking sắp tới</span><strong>{{ upcoming_booking_count }}</strong><small><a href="{% url 'customer-bookings:list' %}">Xem booking của tôi</a></small></article><article class="kpi-card"><span>Lần lưu trú</span><strong>{{ stay_count }}</strong><small>Lịch sử của riêng bạn</small></article><article class="kpi-card"><span>Hóa đơn còn thiếu</span><strong>{{ invoice_balance_due|vnd }}</strong><small><a href="{% url 'customer-billing:list' %}">Xem hóa đơn của tôi</a></small></article></section>
+<section class="panel-card mt-4">
+    <div class="panel-header"><div><h2>Tình trạng phòng hiện tại</h2><p>Phòng đang có khách hoặc chưa sẵn sàng sẽ được làm mờ.</p></div></div>
+    <div class="customer-room-grid">
+        {% for room in rooms %}<article class="customer-room-card{% if room.status != 'AVAILABLE' %} is-unavailable{% endif %}">
+            <div class="room-floor"><i class="bi bi-door-open"></i> Tầng {{ room.floor }}</div>
+            <h3>Phòng {{ room.room_number }}</h3>
+            <span class="status-pill status-{{ room.status|lower }}"><i></i>{{ room.get_status_display }}</span>
+            <p>{{ room.room_type.name }} · Tối đa {{ room.room_type.capacity }} khách</p>
+            <strong>{{ room.room_type.price_per_hour|vnd }}/giờ<br>{{ room.room_type.price_per_night|vnd }}/ngày</strong>
+            {% if room.status == 'AVAILABLE' %}<a class="primary-button" href="{% url 'customer-bookings:create' %}?room={{ room.pk }}">Đặt phòng</a>{% else %}<span class="room-disabled-button">Chưa thể đặt</span>{% endif %}
+        </article>{% empty %}<div class="empty-panel">Chưa có phòng để hiển thị.</div>{% endfor %}
+    </div>
+</section>
+<section class="panel-card mt-4"><div class="panel-header"><h2>Thông tin cá nhân</h2><a class="outline-link" href="{% url 'customers:profile' %}">Chỉnh sửa</a></div><div class="detail-grid"><div><span>Họ tên</span><strong>{{ customer.full_name }}</strong></div><div><span>Email</span><strong>{{ customer.email }}</strong></div><div><span>Số điện thoại</span><strong>{{ customer.phone|default:"Chưa cập nhật" }}</strong></div><div><span>Địa chỉ</span><strong>{{ customer.address|default:"Chưa cập nhật" }}</strong></div></div></section>
+{% endblock %}

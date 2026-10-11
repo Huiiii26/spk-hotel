@@ -1,0 +1,64 @@
+{% extends "dashboard_base.html" %}
+{% load hotel_format %}
+{% block title %}Báo cáo | SPK Hotel{% endblock %}
+{% block page_title %}Báo cáo và thống kê{% endblock %}
+{% block breadcrumb %}Báo cáo{% endblock %}
+{% block dashboard_content %}
+<section class="panel-card report-filter-card">
+    <form method="get" class="report-filter-grid" novalidate>
+        <div><label class="form-label" for="{{ form.start_date.id_for_label }}">{{ form.start_date.label }}</label>{{ form.start_date }}</div>
+        <div><label class="form-label" for="{{ form.end_date.id_for_label }}">{{ form.end_date.label }}</label>{{ form.end_date }}</div>
+        <div><label class="form-label" for="{{ form.group_by.id_for_label }}">{{ form.group_by.label }}</label>{{ form.group_by }}</div>
+        <button class="primary-button" type="submit"><i class="bi bi-funnel"></i>Xem thống kê</button>
+        {% if form.non_field_errors %}<div class="alert alert-danger span-all mb-0">{{ form.non_field_errors }}</div>{% endif %}
+    </form>
+</section>
+
+{% if report %}
+<section class="kpi-grid report-kpi-grid">
+    <article class="kpi-card"><span>Doanh thu thực thu</span><strong>{{ report.revenue|vnd }}</strong><small>Từ các lần thanh toán trong kỳ</small></article>
+    <article class="kpi-card"><span>Booking mới</span><strong>{{ report.booking_count }}</strong><small>Hủy: {{ report.cancelled_count }} ({{ report.cancellation_rate }}%)</small></article>
+    <article class="kpi-card"><span>Công suất phòng</span><strong>{{ report.occupancy.rate }}%</strong><small>{{ report.occupancy.occupied_room_nights }}/{{ report.occupancy.capacity_room_nights }} đêm phòng</small></article>
+    <article class="kpi-card"><span>Công nợ</span><strong>{{ report.unpaid_balance|vnd }}</strong><small>{{ report.unpaid_invoice_count }} hóa đơn chưa trả đủ</small></article>
+</section>
+
+<section class="summary-strip">
+    <span>Loại phòng được đặt nhiều nhất: <strong>{{ report.top_room_type.room__room_type__name|default:"Chưa có dữ liệu" }}</strong></span>
+    <span>Dịch vụ dùng nhiều nhất: <strong>{{ report.top_service.service__name|default:"Chưa có dữ liệu" }}</strong></span>
+</section>
+
+<section class="report-chart-grid">
+    <article class="panel-card chart-card"><div class="panel-header"><h2>Doanh thu theo thời gian</h2></div><div class="chart-wrap"><canvas id="revenueChart"></canvas></div></article>
+    <article class="panel-card chart-card"><div class="panel-header"><h2>Số booking theo thời gian</h2></div><div class="chart-wrap"><canvas id="bookingChart"></canvas></div></article>
+    <article class="panel-card chart-card"><div class="panel-header"><h2>Công suất phòng</h2></div><div class="chart-wrap chart-wrap-small"><canvas id="occupancyChart"></canvas></div></article>
+    <article class="panel-card chart-card"><div class="panel-header"><h2>Doanh thu theo loại phòng</h2></div><div class="chart-wrap"><canvas id="roomTypeRevenueChart"></canvas></div></article>
+</section>
+{{ report.revenue_series|json_script:"revenue-data" }}
+{{ report.booking_series|json_script:"booking-data" }}
+{{ report.occupancy_chart|json_script:"occupancy-data" }}
+{{ report.room_type_revenue|json_script:"room-type-revenue-data" }}
+{% else %}
+<section class="panel-card empty-panel"><i class="bi bi-exclamation-circle"></i><p>Hãy sửa khoảng ngày để xem báo cáo.</p></section>
+{% endif %}
+{% endblock %}
+{% block extra_js %}
+{% if report %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const orange = "#e97800";
+    const softOrange = "rgba(233, 120, 0, .18)";
+    const readData = id => JSON.parse(document.getElementById(id).textContent);
+    const moneyOptions = {responsive: true, maintainAspectRatio: false, scales: {y: {beginAtZero: true, ticks: {callback: value => new Intl.NumberFormat("vi-VN").format(value) + " ₫"}}}};
+    const revenue = readData("revenue-data");
+    new Chart(document.getElementById("revenueChart"), {type: "line", data: {labels: revenue.labels, datasets: [{label: "Doanh thu", data: revenue.values, borderColor: orange, backgroundColor: softOrange, fill: true, tension: .3}]}, options: moneyOptions});
+    const booking = readData("booking-data");
+    new Chart(document.getElementById("bookingChart"), {type: "bar", data: {labels: booking.labels, datasets: [{label: "Booking", data: booking.values, backgroundColor: "#f5ab61", borderRadius: 8}]}, options: {responsive: true, maintainAspectRatio: false, scales: {y: {beginAtZero: true, ticks: {precision: 0}}}}});
+    const occupancy = readData("occupancy-data");
+    new Chart(document.getElementById("occupancyChart"), {type: "doughnut", data: {labels: occupancy.labels, datasets: [{data: occupancy.values, backgroundColor: [orange, "#ffe0ba"], borderWidth: 0}]}, options: {responsive: true, maintainAspectRatio: false}});
+    const roomType = readData("room-type-revenue-data");
+    new Chart(document.getElementById("roomTypeRevenueChart"), {type: "bar", data: {labels: roomType.labels, datasets: [{label: "Doanh thu", data: roomType.values, backgroundColor: orange, borderRadius: 8}]}, options: moneyOptions});
+});
+</script>
+{% endif %}
+{% endblock %}

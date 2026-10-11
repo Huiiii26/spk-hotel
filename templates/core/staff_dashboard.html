@@ -1,0 +1,22 @@
+{% extends "dashboard_base.html" %}
+{% load hotel_format %}
+{% block title %}Tổng quan | SPK Hotel{% endblock %}{% block page_title %}Tổng quan{% endblock %}{% block breadcrumb %}Tổng quan{% endblock %}
+{% block dashboard_content %}
+<section class="kpi-grid">
+    <article class="kpi-card"><span>Tổng số phòng</span><strong>{{ total_rooms }}</strong><small>Phòng đang sử dụng: {{ occupied_rooms }}</small></article>
+    <article class="kpi-card"><span>Đơn đặt đang hoạt động</span><strong>{{ active_booking_count }}</strong><small>Chờ xác nhận: {{ pending_booking_count }} · Đang lưu trú: {{ guest_staying_count }}</small></article>
+    <article class="kpi-card"><span>Doanh thu thực thu tháng</span><strong>{{ revenue|vnd }}</strong><small>Tính từ các lần thanh toán</small></article>
+    <article class="kpi-card"><span>Công suất phòng tháng</span><strong>{{ occupancy.rate }}%</strong><small>Hóa đơn còn công nợ: {{ unpaid_invoice_count }}</small></article>
+</section>
+<section class="summary-strip">
+    <span><strong>{{ available_rooms }}</strong> phòng trống</span>
+    <span><strong>{{ cleaning_rooms }}</strong> đang dọn</span>
+    <span><strong>{{ maintenance_rooms }}</strong> bảo trì</span>
+    <span><strong>{{ top_room_type.room__room_type__name|default:"Chưa có" }}</strong> được đặt nhiều nhất</span>
+    <span><strong>{{ top_service.service__name|default:"Chưa có" }}</strong> dịch vụ nổi bật</span>
+</section>
+<section class="dashboard-grid">
+    <article class="panel-card panel-large"><div class="panel-header"><h2>Đơn đặt gần đây</h2>{% if user.role != 'ACCOUNTANT' %}<a class="outline-link" href="{% url 'bookings-staff:list' %}">Xem tất cả</a>{% endif %}</div><div class="table-responsive"><table class="hotel-table"><thead><tr><th>Mã</th><th>Khách hàng</th><th>Phòng</th><th>Ngày ở</th><th>Trạng thái</th></tr></thead><tbody>{% for booking in recent_bookings %}<tr><td>{% if user.role != 'ACCOUNTANT' %}<a href="{% url 'bookings-staff:detail' booking.pk %}">{{ booking.booking_code }}</a>{% else %}<strong>{{ booking.booking_code }}</strong>{% endif %}</td><td>{{ booking.customer.full_name }}</td><td>{{ booking.room.room_number }}</td><td>{{ booking.check_in_date|vi_date }} – {{ booking.check_out_date|vi_date }}</td><td><span class="status-pill"><i></i>{{ booking.get_status_display }}</span></td></tr>{% empty %}<tr><td colspan="5" class="empty-cell">Chưa có booking.</td></tr>{% endfor %}</tbody></table></div></article>
+    <article class="panel-card"><div class="panel-header"><h2>Tình trạng phòng</h2>{% if user.role == 'MANAGER' %}<a class="outline-link" href="{% url 'rooms-staff:room-list' %}">Quản lý phòng</a>{% endif %}</div><div class="table-responsive"><table class="hotel-table"><thead><tr><th>Số phòng</th><th>Loại</th><th>Trạng thái</th></tr></thead><tbody>{% for room in room_rows %}<tr><td>{{ room.room_number }}</td><td>{{ room.room_type.name }}</td><td><span class="status-pill status-{{ room.status|lower }}"><i></i>{{ room.get_status_display }}</span></td></tr>{% empty %}<tr><td colspan="3" class="empty-cell">Chưa có dữ liệu phòng.</td></tr>{% endfor %}</tbody></table></div></article>
+</section>
+{% endblock %}

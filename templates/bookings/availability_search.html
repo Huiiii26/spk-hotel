@@ -1,0 +1,29 @@
+{% extends "base.html" %}{% load hotel_format %}
+{% block title %}Tìm phòng trống | SPK Hotel{% endblock %}
+{% block content %}
+<div class="text-center mb-4">
+    <h1 class="display-5 fw-bold">Tìm phòng trống</h1>
+    <p class="lead text-secondary">Kết quả được kiểm tra từ lịch booking, không chỉ dựa vào trạng thái hiện tại của phòng.</p>
+</div>
+<section class="panel-card mb-4">
+    <form method="get" novalidate>
+        <div class="search-grid">
+            {% for field in form %}<div><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}
+        </div>
+        <button class="btn btn-primary mt-4 px-4" type="submit"><i class="bi bi-search me-1"></i>Tìm phòng</button>
+    </form>
+</section>
+{% if searched and form.is_valid %}
+<div class="d-flex justify-content-between align-items-center mb-3"><h2 class="h3 mb-0">Phòng phù hợp</h2><span class="text-secondary">{{ rooms|length }} kết quả</span></div>
+<div class="row g-4">
+    {% for room in rooms %}
+    <div class="col-md-6 col-xl-4"><article class="public-room-card h-100">
+        {% if room.room_type.image %}<img src="{{ room.room_type.image.url }}" alt="{{ room.room_type.name }}">{% else %}<div class="room-image-placeholder"><i class="bi bi-door-open"></i></div>{% endif %}
+        <div class="p-4"><div class="d-flex justify-content-between"><h3 class="h4">Phòng {{ room.room_number }}</h3><span class="status-pill status-available"><i></i>Trống lịch</span></div><p class="text-secondary mb-2">{{ room.room_type.name }} · Tầng {{ room.floor }} · Tối đa {{ room.room_type.capacity }} khách</p><p class="small text-secondary">{{ room.room_type.amenities|join:", "|default:"Chưa cập nhật tiện ích" }}</p><strong class="text-primary d-block mb-3">{{ room.room_type.price_per_hour|vnd }}/giờ · {{ room.room_type.price_per_night|vnd }}/ngày</strong>
+            {% if user.is_authenticated and user.role == 'CUSTOMER' %}<a class="btn btn-primary w-100" href="{% url 'customer-bookings:create' %}?room={{ room.pk }}&check_in_date={{ form.cleaned_data.check_in_date|date:'Y-m-d\\TH:i' }}&check_out_date={{ form.cleaned_data.check_out_date|date:'Y-m-d\\TH:i' }}&guest_count={{ form.cleaned_data.guest_count }}">Chọn phòng</a>{% elif user.is_authenticated and user.role == 'RECEPTIONIST' or user.is_authenticated and user.role == 'MANAGER' %}<a class="btn btn-primary w-100" href="{% url 'bookings-staff:create' %}?room={{ room.pk }}&check_in_date={{ form.cleaned_data.check_in_date|date:'Y-m-d\\TH:i' }}&check_out_date={{ form.cleaned_data.check_out_date|date:'Y-m-d\\TH:i' }}&guest_count={{ form.cleaned_data.guest_count }}">Tạo booking</a>{% elif not user.is_authenticated %}<a class="btn btn-outline-primary w-100" href="{% url 'accounts:login' %}">Đăng nhập để đặt</a>{% endif %}
+        </div>
+    </article></div>
+    {% empty %}<div class="col-12"><div class="empty-panel panel-card"><i class="bi bi-calendar-x"></i><strong>Không tìm thấy phòng phù hợp</strong><span>Hãy thử đổi ngày, ngân sách hoặc tiện ích mong muốn.</span></div></div>{% endfor %}
+</div>
+{% endif %}
+{% endblock %}
