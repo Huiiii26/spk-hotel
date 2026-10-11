@@ -25,3 +25,5 @@ services:
         sync: false
       - key: GEMINI_MODEL
         value: gemini-2.5-flash
+      - key: SEED_DEMO_ON_DEPLOY
+        value: "true"
