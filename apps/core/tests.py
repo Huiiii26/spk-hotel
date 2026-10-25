@@ -49,13 +49,16 @@ class SeedDemoTests(TestCase):
         call_command("seed_demo", stdout=output)
         call_command("seed_demo", stdout=output)
 
-        self.assertEqual(RoomType.objects.filter(name__in=["Standard", "Deluxe", "Family Suite"]).count(), 3)
-        self.assertEqual(Room.objects.filter(room_number__in=["101", "102", "103", "104", "201", "202", "203", "301", "302", "303"]).count(), 10)
-        self.assertEqual(Customer.objects.filter(email__endswith="@spkhotel.vn").count(), 3)
-        self.assertEqual(Booking.objects.filter(booking_code__startswith="DEMO-").count(), 5)
-        self.assertEqual(Service.objects.count(), 4)
-        self.assertEqual(Invoice.objects.count(), 3)
-        self.assertEqual(Payment.objects.count(), 2)
+        self.assertEqual(
+            RoomType.objects.filter(name__in=["Standard", "Deluxe", "Family Suite", "Executive Suite"]).count(),
+            4,
+        )
+        self.assertEqual(Room.objects.filter(notes="Dữ liệu mẫu SPK Hotel").count(), 26)
+        self.assertEqual(Customer.objects.filter(email__endswith="@spkhotel.vn").count(), 6)
+        self.assertEqual(Booking.objects.filter(booking_code__startswith="DEMO-").count(), 20)
+        self.assertEqual(Service.objects.count(), 8)
+        self.assertEqual(Invoice.objects.count(), 10)
+        self.assertEqual(Payment.objects.count(), 9)
         self.assertEqual(AILog.objects.count(), 1)
         self.assertEqual(EmailDraft.objects.count(), 1)
         manager = get_user_model().objects.get(email="quanli@hotel.com")

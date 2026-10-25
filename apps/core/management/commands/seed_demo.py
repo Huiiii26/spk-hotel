@@ -37,6 +37,7 @@ class Command(BaseCommand):
 
         lines = [
             "Đã tạo/cập nhật dữ liệu demo SPK Hotel.",
+            "Quy mô: 4 loại phòng, 26 phòng, 11 khách hàng và 20 booking mẫu.",
             "Tài khoản demo:",
             "  Quản lý: quanli@hotel.com / 1",
             "  Lễ tân: letan@hotel.com / 1",
@@ -83,6 +84,9 @@ class Command(BaseCommand):
             "customer1": ("customer1@spkhotel.vn", "Lê Thị Ngọc Mai", "0911000001", User.Role.CUSTOMER, DEFAULT_DEMO_PASSWORD, None),
             "customer2": ("customer2@spkhotel.vn", "Nguyễn Văn An", "0911000002", User.Role.CUSTOMER, DEFAULT_DEMO_PASSWORD, None),
             "customer3": ("customer3@spkhotel.vn", "Phạm Thu Trang", "0911000003", User.Role.CUSTOMER, DEFAULT_DEMO_PASSWORD, None),
+            "customer4": ("customer4@spkhotel.vn", "Vũ Hoàng Nam", "0911000004", User.Role.CUSTOMER, DEFAULT_DEMO_PASSWORD, None),
+            "customer5": ("customer5@spkhotel.vn", "Đặng Minh Châu", "0911000005", User.Role.CUSTOMER, DEFAULT_DEMO_PASSWORD, None),
+            "customer6": ("customer6@spkhotel.vn", "Bùi Anh Tú", "0911000006", User.Role.CUSTOMER, DEFAULT_DEMO_PASSWORD, None),
         }
         return {
             key: self._upsert_user(
@@ -102,6 +106,9 @@ class Command(BaseCommand):
             "customer1": ("Thái Nguyên", "Khách đặt qua website"),
             "customer2": ("Bắc Kạn", "Ưu tiên phòng yên tĩnh"),
             "customer3": ("Hà Nội", "Khách hàng thân thiết"),
+            "customer4": ("Hải Phòng", "Ưu tiên phòng tầng cao"),
+            "customer5": ("Quảng Ninh", "Thường đặt phòng công tác"),
+            "customer6": ("Bắc Giang", "Khách gia đình"),
         }
         for key, (address, notes) in linked_definitions.items():
             user = users[key]
@@ -137,6 +144,22 @@ class Command(BaseCommand):
                 "notes": "Khách chưa có tài khoản website",
             },
         )
+        walkin_definitions = {
+            "walkin3": ("Ngô Quang Huy", "0922000003", "Lạng Sơn", "Khách đặt trực tiếp tại quầy"),
+            "walkin4": ("Trịnh Hà My", "0922000004", "Hà Nam", "Khách đoàn công tác"),
+            "walkin5": ("Phan Đức Long", "0922000005", "Ninh Bình", "Yêu cầu xuất hóa đơn"),
+        }
+        for key, (full_name, phone, address, notes) in walkin_definitions.items():
+            customers[key], _ = Customer.objects.update_or_create(
+                user=None,
+                email=f"{key}@demo.local",
+                defaults={
+                    "full_name": full_name,
+                    "phone": phone,
+                    "address": address,
+                    "notes": notes,
+                },
+            )
         return customers
 
     def _seed_room_types(self):
@@ -168,6 +191,15 @@ class Command(BaseCommand):
                 "amenities": ["WiFi", "Điều hòa", "TV", "Bồn tắm", "Bếp nhỏ"],
                 "is_active": True,
             },
+            "executive": {
+                "name": "Executive Suite",
+                "description": "Phòng cao cấp dành cho khách công tác, có khu làm việc và phòng khách riêng.",
+                "capacity": 4,
+                "price_per_night": Decimal("2800000"),
+                "price_per_hour": Decimal("420000"),
+                "amenities": ["WiFi", "Điều hòa", "Smart TV", "Bồn tắm", "Minibar", "Bàn làm việc"],
+                "is_active": True,
+            },
         }
         result = {}
         for key, values in definitions.items():
@@ -181,12 +213,28 @@ class Command(BaseCommand):
             ("102", "standard", 1, Room.Status.AVAILABLE),
             ("103", "standard", 1, Room.Status.AVAILABLE),
             ("104", "standard", 1, Room.Status.AVAILABLE),
+            ("105", "standard", 1, Room.Status.AVAILABLE),
+            ("106", "standard", 1, Room.Status.AVAILABLE),
             ("201", "deluxe", 2, Room.Status.AVAILABLE),
             ("202", "deluxe", 2, Room.Status.AVAILABLE),
             ("203", "deluxe", 2, Room.Status.CLEANING),
+            ("204", "deluxe", 2, Room.Status.OCCUPIED),
+            ("205", "deluxe", 2, Room.Status.AVAILABLE),
+            ("206", "deluxe", 2, Room.Status.AVAILABLE),
             ("301", "family", 3, Room.Status.OCCUPIED),
             ("302", "family", 3, Room.Status.AVAILABLE),
             ("303", "family", 3, Room.Status.MAINTENANCE),
+            ("304", "family", 3, Room.Status.AVAILABLE),
+            ("305", "family", 3, Room.Status.AVAILABLE),
+            ("306", "family", 3, Room.Status.AVAILABLE),
+            ("401", "executive", 4, Room.Status.AVAILABLE),
+            ("402", "executive", 4, Room.Status.AVAILABLE),
+            ("403", "executive", 4, Room.Status.AVAILABLE),
+            ("404", "executive", 4, Room.Status.CLEANING),
+            ("405", "executive", 4, Room.Status.AVAILABLE),
+            ("406", "executive", 4, Room.Status.AVAILABLE),
+            ("501", "executive", 5, Room.Status.AVAILABLE),
+            ("502", "executive", 5, Room.Status.AVAILABLE),
         ]
         result = {}
         for number, type_key, floor, status in definitions:
@@ -211,6 +259,21 @@ class Command(BaseCommand):
             ("DEMO-CHECKEDIN", "customer2", "301", -1, 2, 3, Booking.Status.CHECKED_IN, users["receptionist"]),
             ("DEMO-CHECKEDOUT", "customer3", "102", -12, -9, 1, Booking.Status.CHECKED_OUT, users["receptionist"]),
             ("DEMO-CANCELLED", "walkin2", "202", 10, 12, 2, Booking.Status.CANCELLED, users["receptionist"]),
+            ("DEMO-PENDING-02", "customer4", "105", 4, 6, 2, Booking.Status.PENDING, users["customer4"]),
+            ("DEMO-PENDING-03", "customer6", "304", 8, 11, 4, Booking.Status.PENDING, users["customer6"]),
+            ("DEMO-CONFIRMED-02", "customer5", "401", 12, 15, 2, Booking.Status.CONFIRMED, users["customer5"]),
+            ("DEMO-CONFIRMED-03", "walkin3", "205", 3, 5, 2, Booking.Status.CONFIRMED, users["receptionist"]),
+            ("DEMO-CHECKEDIN-02", "walkin4", "204", -1, 1, 2, Booking.Status.CHECKED_IN, users["receptionist"]),
+            ("DEMO-CHECKEDOUT-02", "customer4", "103", -22, -20, 2, Booking.Status.CHECKED_OUT, users["receptionist"]),
+            ("DEMO-CHECKEDOUT-03", "customer5", "203", -35, -32, 1, Booking.Status.CHECKED_OUT, users["receptionist"]),
+            ("DEMO-CHECKEDOUT-04", "customer6", "302", -48, -44, 4, Booking.Status.CHECKED_OUT, users["receptionist"]),
+            ("DEMO-CHECKEDOUT-05", "walkin3", "401", -65, -62, 2, Booking.Status.CHECKED_OUT, users["receptionist"]),
+            ("DEMO-CHECKEDOUT-06", "walkin4", "204", -82, -80, 2, Booking.Status.CHECKED_OUT, users["receptionist"]),
+            ("DEMO-CHECKEDOUT-07", "walkin5", "402", -110, -106, 3, Booking.Status.CHECKED_OUT, users["receptionist"]),
+            ("DEMO-CHECKEDOUT-08", "customer1", "106", -140, -138, 2, Booking.Status.CHECKED_OUT, users["receptionist"]),
+            ("DEMO-HOURLY", "customer2", "206", 1, 1, 2, Booking.Status.CONFIRMED, users["customer2"]),
+            ("DEMO-CANCELLED-02", "customer5", "405", 18, 21, 2, Booking.Status.CANCELLED, users["customer5"]),
+            ("DEMO-CANCELLED-03", "walkin5", "104", -5, -3, 1, Booking.Status.CANCELLED, users["receptionist"]),
         ]
         result = {}
         for code, customer_key, room_number, start, end, guests, status, creator in definitions:
@@ -227,11 +290,18 @@ class Command(BaseCommand):
                 "status": status,
                 "notes": "Booking mẫu để trình diễn",
             }
+            if code == "DEMO-HOURLY":
+                defaults["check_in_date"] = timezone.make_aware(
+                    datetime.combine(today + timedelta(days=start), time(hour=9))
+                )
+                defaults["check_out_date"] = timezone.make_aware(
+                    datetime.combine(today + timedelta(days=end), time(hour=14))
+                )
             if status == Booking.Status.CHECKED_IN:
                 defaults["actual_check_in_at"] = timezone.now()
             if status == Booking.Status.CHECKED_OUT:
-                defaults["actual_check_in_at"] = timezone.now() - timedelta(days=12)
-                defaults["actual_check_out_at"] = timezone.now() - timedelta(days=9)
+                defaults["actual_check_in_at"] = defaults["check_in_date"]
+                defaults["actual_check_out_at"] = defaults["check_out_date"]
             if status == Booking.Status.CANCELLED:
                 defaults["cancelled_at"] = timezone.now()
                 defaults["cancellation_reason"] = "Khách thay đổi kế hoạch"
@@ -245,6 +315,10 @@ class Command(BaseCommand):
             "laundry": ("Giặt ủi", "Giặt và ủi quần áo", Decimal("50000"), "kg"),
             "airport": ("Đưa đón sân bay", "Xe riêng đưa hoặc đón sân bay", Decimal("450000"), "chuyến"),
             "minibar": ("Minibar", "Đồ uống và đồ ăn nhẹ trong phòng", Decimal("80000"), "phần"),
+            "spa": ("Spa thư giãn", "Liệu trình thư giãn 60 phút", Decimal("650000"), "lượt"),
+            "dinner": ("Bữa tối", "Set menu tối tại nhà hàng", Decimal("280000"), "suất"),
+            "meeting": ("Phòng họp", "Phòng họp và thiết bị trình chiếu", Decimal("900000"), "buổi"),
+            "late_checkout": ("Trả phòng muộn", "Gia hạn thời gian trả phòng", Decimal("350000"), "lần"),
         }
         result = {}
         for key, (name, description, price, unit) in definitions.items():
@@ -286,6 +360,15 @@ class Command(BaseCommand):
         definitions = [
             (bookings["DEMO-CHECKEDIN"], services["breakfast"], Decimal("3"), today),
             (bookings["DEMO-CHECKEDOUT"], services["laundry"], Decimal("2"), today - timedelta(days=10)),
+            (bookings["DEMO-CHECKEDIN-02"], services["dinner"], Decimal("2"), today),
+            (bookings["DEMO-CHECKEDIN-02"], services["minibar"], Decimal("2"), today),
+            (bookings["DEMO-CHECKEDOUT-02"], services["airport"], Decimal("1"), today - timedelta(days=21)),
+            (bookings["DEMO-CHECKEDOUT-03"], services["spa"], Decimal("1"), today - timedelta(days=34)),
+            (bookings["DEMO-CHECKEDOUT-04"], services["breakfast"], Decimal("8"), today - timedelta(days=46)),
+            (bookings["DEMO-CHECKEDOUT-05"], services["meeting"], Decimal("1"), today - timedelta(days=64)),
+            (bookings["DEMO-CHECKEDOUT-06"], services["laundry"], Decimal("3"), today - timedelta(days=81)),
+            (bookings["DEMO-CHECKEDOUT-07"], services["late_checkout"], Decimal("1"), today - timedelta(days=107)),
+            (bookings["DEMO-CHECKEDOUT-08"], services["minibar"], Decimal("3"), today - timedelta(days=139)),
         ]
         for booking, service, quantity, used_at in definitions:
             BookingService.objects.update_or_create(
@@ -304,6 +387,15 @@ class Command(BaseCommand):
         unpaid = create_or_update_invoice(booking=bookings["DEMO-PENDING"])
         partial = create_or_update_invoice(booking=bookings["DEMO-CONFIRMED"])
         paid = create_or_update_invoice(booking=bookings["DEMO-CHECKEDOUT"])
+        additional_paid_codes = [
+            "DEMO-CHECKEDOUT-02",
+            "DEMO-CHECKEDOUT-03",
+            "DEMO-CHECKEDOUT-04",
+            "DEMO-CHECKEDOUT-05",
+            "DEMO-CHECKEDOUT-06",
+            "DEMO-CHECKEDOUT-07",
+            "DEMO-CHECKEDOUT-08",
+        ]
 
         Payment.objects.update_or_create(
             invoice=partial,
@@ -316,6 +408,20 @@ class Command(BaseCommand):
                 "notes": "Thanh toán một phần mẫu",
             },
         )
+        for index, code in enumerate(additional_paid_codes, start=2):
+            invoice = create_or_update_invoice(booking=bookings[code])
+            Payment.objects.update_or_create(
+                invoice=invoice,
+                reference=f"DEMO-PAID-{index:02d}",
+                defaults={
+                    "amount": invoice.total_amount,
+                    "method": [Payment.Method.CASH, Payment.Method.BANK_TRANSFER, Payment.Method.CARD][index % 3],
+                    "paid_at": invoice.booking.actual_check_out_at or timezone.now(),
+                    "recorded_by": users["accountant"],
+                    "notes": "Thanh toán toàn bộ mẫu phục vụ báo cáo doanh thu",
+                },
+            )
+            create_or_update_invoice(booking=invoice.booking)
         Payment.objects.update_or_create(
             invoice=paid,
             reference="DEMO-PAID",
